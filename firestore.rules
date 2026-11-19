@@ -1,0 +1,345 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'suryakantabarik216@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isValidBoardId(boardId) {
+      return boardId is string && boardId in ['BSE_10', 'CHSE_12_ARTS'];
+    }
+
+    function isValidDifficulty(diff) {
+      return diff is string && diff in ['EASY', 'MEDIUM', 'HARD'];
+    }
+
+    function isValidContentLabel(label) {
+      return label is string && label in ['VERIFIED_PYQ', 'ADMIN_APPROVED', 'PRACTICE_QUESTION', 'AI_PRACTICE'];
+    }
+
+    function isValidTimestampsCreate(data) {
+      return data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidTimestampsUpdate(data) {
+      return data.createdAt == existing().createdAt &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // --- Validation Helpers ---
+
+    function isValidSubject(data) {
+      return isValidBoardId(data.boardId) &&
+             data.nameEn is string && data.nameEn.size() >= 1 && data.nameEn.size() <= 120 &&
+             data.nameOr is string && data.nameOr.size() >= 1 && data.nameOr.size() <= 180 &&
+             data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000 &&
+             data.published is bool &&
+             (!('syllabusNote' in data) || (data.syllabusNote is string && data.syllabusNote.size() <= 500));
+    }
+
+    function isValidChapter(data) {
+      return isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 160 &&
+             data.titleOr is string && data.titleOr.size() >= 1 && data.titleOr.size() <= 220 &&
+             data.chapterNumber is int && data.chapterNumber >= 1 && data.chapterNumber <= 200 &&
+             data.published is bool;
+    }
+
+    function isValidImportantQuestion(data) {
+      return isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             isValidId(data.chapterId) &&
+             data.marks is int && data.marks >= 1 && data.marks <= 20 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 40 &&
+             isValidDifficulty(data.difficulty) &&
+             isValidContentLabel(data.contentLabel) &&
+             (!('sourceYear' in data) || (data.sourceYear is string && data.sourceYear.size() <= 40)) &&
+             data.questionEn is string && data.questionEn.size() >= 1 && data.questionEn.size() <= 2000 &&
+             data.questionOr is string && data.questionOr.size() >= 1 && data.questionOr.size() <= 2500 &&
+             data.answerEn is string && data.answerEn.size() >= 1 && data.answerEn.size() <= 6000 &&
+             data.answerOr is string && data.answerOr.size() >= 1 && data.answerOr.size() <= 7000 &&
+             data.published is bool;
+    }
+
+    function isValidMcq(data) {
+      return isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             isValidId(data.chapterId) &&
+             data.questionEn is string && data.questionEn.size() >= 1 && data.questionEn.size() <= 2000 &&
+             data.questionOr is string && data.questionOr.size() >= 1 && data.questionOr.size() <= 2500 &&
+             data.optionsEn is list && data.optionsEn.size() == 4 && data.optionsEn[0] is string &&
+             data.optionsOr is list && data.optionsOr.size() == 4 && data.optionsOr[0] is string &&
+             data.correctIndex is int && data.correctIndex >= 0 && data.correctIndex <= 3 &&
+             data.explanationEn is string && data.explanationEn.size() >= 1 && data.explanationEn.size() <= 2000 &&
+             data.explanationOr is string && data.explanationOr.size() >= 1 && data.explanationOr.size() <= 2500 &&
+             isValidDifficulty(data.difficulty) &&
+             isValidContentLabel(data.contentLabel) &&
+             (!('sourceYear' in data) || (data.sourceYear is string && data.sourceYear.size() <= 40)) &&
+             data.published is bool;
+    }
+
+    function isValidMockExam(data) {
+      return isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 160 &&
+             data.titleOr is string && data.titleOr.size() >= 1 && data.titleOr.size() <= 220 &&
+             data.durationMinutes is int && data.durationMinutes >= 5 && data.durationMinutes <= 300 &&
+             data.totalMarks is int && data.totalMarks >= 1 && data.totalMarks <= 500 &&
+             data.questionIds is list && data.questionIds.size() <= 100 &&
+             (data.questionIds.size() == 0 || data.questionIds[0] is string) &&
+             (!('patternNote' in data) || (data.patternNote is string && data.patternNote.size() <= 500)) &&
+             data.published is bool;
+    }
+
+    function isValidPyqPaper(data) {
+      return isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             data.examYear is string && data.examYear.size() >= 1 && data.examYear.size() <= 20 &&
+             data.questionType is string && data.questionType.size() >= 1 && data.questionType.size() <= 60 &&
+             data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 180 &&
+             data.titleOr is string && data.titleOr.size() >= 1 && data.titleOr.size() <= 220 &&
+             data.searchableText is string && data.searchableText.size() <= 8000 &&
+             (!('pdfUri' in data) || (data.pdfUri is string && data.pdfUri.size() <= 1000)) &&
+             data.contentLabel is string && data.contentLabel in ['VERIFIED_PYQ', 'PRACTICE_QUESTION'] &&
+             data.published is bool;
+    }
+
+    function isValidStudyNote(data) {
+      return isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             isValidId(data.chapterId) &&
+             data.noteType is string && data.noteType.size() >= 1 && data.noteType.size() <= 40 &&
+             data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 180 &&
+             data.titleOr is string && data.titleOr.size() >= 1 && data.titleOr.size() <= 220 &&
+             data.contentEn is string && data.contentEn.size() >= 1 && data.contentEn.size() <= 12000 &&
+             data.contentOr is string && data.contentOr.size() >= 1 && data.contentOr.size() <= 14000 &&
+             (!('pdfUri' in data) || (data.pdfUri is string && data.pdfUri.size() <= 1000)) &&
+             data.published is bool;
+    }
+
+    function isValidUserProfile(data, uid) {
+      return data.userId is string && data.userId == uid &&
+             data.displayName is string && data.displayName.size() <= 80 &&
+             isValidBoardId(data.boardId) &&
+             data.language is string && data.language in ['EN', 'OR'] &&
+             data.examDateEpochDays is int && data.examDateEpochDays >= 0 && data.examDateEpochDays <= 100000 &&
+             data.dailyTargetQuestions is int && data.dailyTargetQuestions >= 1 && data.dailyTargetQuestions <= 200 &&
+             data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 5000 &&
+             data.lastStudyEpochDay is int && data.lastStudyEpochDay >= 0 && data.lastStudyEpochDay <= 100000;
+    }
+
+    function isValidUserBookmark(data) {
+      return isValidId(data.itemId) &&
+             data.itemType is string && data.itemType in ['IMPORTANT_Q', 'MCQ', 'NOTE'] &&
+             isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             data.inRevisionList is bool;
+    }
+
+    function isValidChapterProgress(data) {
+      return isValidId(data.chapterId) &&
+             isValidBoardId(data.boardId) &&
+             isValidId(data.subjectId) &&
+             data.completed is bool;
+    }
+
+    function isValidQuizAttempt(data) {
+      return isValidBoardId(data.boardId) &&
+             (!('subjectId' in data) || isValidId(data.subjectId)) &&
+             data.mode is string && data.mode in ['QUIZ', 'MOCK_TEST', 'MCQ_PRACTICE'] &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+             data.totalQuestions is int && data.totalQuestions >= 1 && data.totalQuestions <= 200 &&
+             data.correctCount is int && data.correctCount >= 0 && data.correctCount <= data.totalQuestions &&
+             data.wrongCount is int && data.wrongCount >= 0 && data.wrongCount <= data.totalQuestions &&
+             data.scoreMarks is int && data.scoreMarks >= 0 && data.scoreMarks <= 1000 &&
+             data.maxMarks is int && data.maxMarks >= 1 && data.maxMarks <= 1000 &&
+             data.durationSeconds is int && data.durationSeconds >= 0 && data.durationSeconds <= 86400 &&
+             data.status is string && data.status in ['IN_PROGRESS', 'COMPLETED'] &&
+             data.wrongMcqIds is list && data.wrongMcqIds.size() <= 100 &&
+             (data.wrongMcqIds.size() == 0 || data.wrongMcqIds[0] is string);
+    }
+
+    // --- Admin Registry ---
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && (isOwner(uid) || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // --- Curriculum & Content Catalog (Read: signed-in published or Admin; Write: Admin only) ---
+    match /subjects/{subjectId} {
+      allow get: if isValidId(subjectId) && isSignedIn() && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+      allow create: if isValidId(subjectId) && isAdmin() && isValidSubject(incoming()) && isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['boardId', 'nameEn', 'nameOr', 'sortOrder', 'published', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['boardId', 'nameEn', 'nameOr', 'sortOrder', 'published', 'syllabusNote', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(subjectId) && isAdmin() && isValidSubject(incoming()) && isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['boardId', 'nameEn', 'nameOr', 'sortOrder', 'published', 'syllabusNote', 'updatedAt']);
+      allow delete: if isValidId(subjectId) && isAdmin();
+    }
+
+    match /chapters/{chapterId} {
+      allow get: if isValidId(chapterId) && isSignedIn() && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+      allow create: if isValidId(chapterId) && isAdmin() && isValidChapter(incoming()) && isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['boardId', 'subjectId', 'titleEn', 'titleOr', 'chapterNumber', 'published', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['boardId', 'subjectId', 'titleEn', 'titleOr', 'chapterNumber', 'published', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(chapterId) && isAdmin() && isValidChapter(incoming()) && isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['boardId', 'subjectId', 'titleEn', 'titleOr', 'chapterNumber', 'published', 'updatedAt']);
+      allow delete: if isValidId(chapterId) && isAdmin();
+    }
+
+    match /important_questions/{questionId} {
+      allow get: if isValidId(questionId) && isSignedIn() && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+      allow create: if isValidId(questionId) && isAdmin() && isValidImportantQuestion(incoming()) && isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['boardId', 'subjectId', 'chapterId', 'marks', 'category', 'difficulty', 'contentLabel', 'questionEn', 'questionOr', 'answerEn', 'answerOr', 'published', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['boardId', 'subjectId', 'chapterId', 'marks', 'category', 'difficulty', 'contentLabel', 'sourceYear', 'questionEn', 'questionOr', 'answerEn', 'answerOr', 'published', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(questionId) && isAdmin() && isValidImportantQuestion(incoming()) && isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['boardId', 'subjectId', 'chapterId', 'marks', 'category', 'difficulty', 'contentLabel', 'sourceYear', 'questionEn', 'questionOr', 'answerEn', 'answerOr', 'published', 'updatedAt']);
+      allow delete: if isValidId(questionId) && isAdmin();
+    }
+
+    match /mcqs/{mcqId} {
+      allow get: if isValidId(mcqId) && isSignedIn() && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+      allow create: if isValidId(mcqId) && isAdmin() && isValidMcq(incoming()) && isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['boardId', 'subjectId', 'chapterId', 'questionEn', 'questionOr', 'optionsEn', 'optionsOr', 'correctIndex', 'explanationEn', 'explanationOr', 'difficulty', 'contentLabel', 'published', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['boardId', 'subjectId', 'chapterId', 'questionEn', 'questionOr', 'optionsEn', 'optionsOr', 'correctIndex', 'explanationEn', 'explanationOr', 'difficulty', 'contentLabel', 'sourceYear', 'published', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(mcqId) && isAdmin() && isValidMcq(incoming()) && isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['boardId', 'subjectId', 'chapterId', 'questionEn', 'questionOr', 'optionsEn', 'optionsOr', 'correctIndex', 'explanationEn', 'explanationOr', 'difficulty', 'contentLabel', 'sourceYear', 'published', 'updatedAt']);
+      allow delete: if isValidId(mcqId) && isAdmin();
+    }
+
+    match /mock_exams/{examId} {
+      allow get: if isValidId(examId) && isSignedIn() && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+      allow create: if isValidId(examId) && isAdmin() && isValidMockExam(incoming()) && isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['boardId', 'subjectId', 'titleEn', 'titleOr', 'durationMinutes', 'totalMarks', 'questionIds', 'published', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['boardId', 'subjectId', 'titleEn', 'titleOr', 'durationMinutes', 'totalMarks', 'questionIds', 'patternNote', 'published', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(examId) && isAdmin() && isValidMockExam(incoming()) && isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['boardId', 'subjectId', 'titleEn', 'titleOr', 'durationMinutes', 'totalMarks', 'questionIds', 'patternNote', 'published', 'updatedAt']);
+      allow delete: if isValidId(examId) && isAdmin();
+    }
+
+    match /pyq_papers/{pyqId} {
+      allow get: if isValidId(pyqId) && isSignedIn() && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+      allow create: if isValidId(pyqId) && isAdmin() && isValidPyqPaper(incoming()) && isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['boardId', 'subjectId', 'examYear', 'questionType', 'titleEn', 'titleOr', 'searchableText', 'contentLabel', 'published', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['boardId', 'subjectId', 'examYear', 'questionType', 'titleEn', 'titleOr', 'searchableText', 'pdfUri', 'contentLabel', 'published', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(pyqId) && isAdmin() && isValidPyqPaper(incoming()) && isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['boardId', 'subjectId', 'examYear', 'questionType', 'titleEn', 'titleOr', 'searchableText', 'pdfUri', 'contentLabel', 'published', 'updatedAt']);
+      allow delete: if isValidId(pyqId) && isAdmin();
+    }
+
+    match /study_notes/{noteId} {
+      allow get: if isValidId(noteId) && isSignedIn() && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isAdmin());
+      allow create: if isValidId(noteId) && isAdmin() && isValidStudyNote(incoming()) && isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['boardId', 'subjectId', 'chapterId', 'noteType', 'titleEn', 'titleOr', 'contentEn', 'contentOr', 'published', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['boardId', 'subjectId', 'chapterId', 'noteType', 'titleEn', 'titleOr', 'contentEn', 'contentOr', 'pdfUri', 'published', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(noteId) && isAdmin() && isValidStudyNote(incoming()) && isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['boardId', 'subjectId', 'chapterId', 'noteType', 'titleEn', 'titleOr', 'contentEn', 'contentOr', 'pdfUri', 'published', 'updatedAt']);
+      allow delete: if isValidId(noteId) && isAdmin();
+    }
+
+    // --- User Profile & Personal Study Subcollections ---
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) && isOwner(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       isValidTimestampsCreate(incoming()) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'boardId', 'language', 'examDateEpochDays', 'dailyTargetQuestions', 'streakDays', 'lastStudyEpochDay', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'boardId', 'language', 'examDateEpochDays', 'dailyTargetQuestions', 'streakDays', 'lastStudyEpochDay', 'createdAt', 'updatedAt']);
+      allow update: if isValidId(userId) && isOwner(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       isValidTimestampsUpdate(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'boardId', 'language', 'examDateEpochDays', 'dailyTargetQuestions', 'streakDays', 'lastStudyEpochDay', 'updatedAt']);
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      match /bookmarks/{bookmarkId} {
+        allow get: if isValidId(bookmarkId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(bookmarkId) && isOwner(userId) &&
+                         isValidUserBookmark(incoming()) &&
+                         isValidTimestampsCreate(incoming()) &&
+                         incoming().keys().hasAll(['itemId', 'itemType', 'boardId', 'subjectId', 'inRevisionList', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['itemId', 'itemType', 'boardId', 'subjectId', 'inRevisionList', 'createdAt', 'updatedAt']);
+        allow update: if isValidId(bookmarkId) && isOwner(userId) &&
+                         isValidUserBookmark(incoming()) &&
+                         isValidTimestampsUpdate(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['inRevisionList', 'updatedAt']);
+        allow delete: if isValidId(bookmarkId) && isOwner(userId);
+      }
+
+      match /chapter_progress/{chapterId} {
+        allow get: if isValidId(chapterId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(chapterId) && isOwner(userId) &&
+                         isValidChapterProgress(incoming()) &&
+                         isValidTimestampsCreate(incoming()) &&
+                         incoming().keys().hasAll(['chapterId', 'boardId', 'subjectId', 'completed', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['chapterId', 'boardId', 'subjectId', 'completed', 'createdAt', 'updatedAt']);
+        allow update: if isValidId(chapterId) && isOwner(userId) &&
+                         isValidChapterProgress(incoming()) &&
+                         isValidTimestampsUpdate(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'updatedAt']);
+        allow delete: if isValidId(chapterId) && isOwner(userId);
+      }
+
+      match /attempts/{attemptId} {
+        allow get: if isValidId(attemptId) && (isOwner(userId) || isAdmin());
+        allow list: if isOwner(userId) || isAdmin();
+        allow create: if isValidId(attemptId) && isOwner(userId) &&
+                         isValidQuizAttempt(incoming()) &&
+                         isValidTimestampsCreate(incoming()) &&
+                         incoming().keys().hasAll(['boardId', 'mode', 'title', 'totalQuestions', 'correctCount', 'wrongCount', 'scoreMarks', 'maxMarks', 'durationSeconds', 'status', 'wrongMcqIds', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['boardId', 'subjectId', 'mode', 'title', 'totalQuestions', 'correctCount', 'wrongCount', 'scoreMarks', 'maxMarks', 'durationSeconds', 'status', 'wrongMcqIds', 'createdAt', 'updatedAt']);
+        allow update: if isValidId(attemptId) &&
+                         isValidQuizAttempt(incoming()) &&
+                         isValidTimestampsUpdate(incoming()) &&
+                         (isAdmin() || (
+                           isOwner(userId) &&
+                           existing().status != 'COMPLETED' &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['correctCount', 'wrongCount', 'scoreMarks', 'durationSeconds', 'status', 'wrongMcqIds', 'updatedAt'])
+                         ));
+        allow delete: if isValidId(attemptId) && isOwner(userId);
+      }
+    }
+  }
+}

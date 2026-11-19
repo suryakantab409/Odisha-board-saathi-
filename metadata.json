@@ -1,0 +1,6 @@
+{
+  "name": "BoardSaathi Odisha",
+  "description": "Board examination preparation platform for BSE Odisha Class 10 and CHSE +2 Arts students with Odia and English support, MCQs, quizzes, mock tests, PYQs, notes, and progress tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

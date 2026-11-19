@@ -1,0 +1,257 @@
+{
+  "entities": {
+    "Subject": {
+      "title": "Subject",
+      "description": "Board-specific subject metadata for BSE Odisha Class 10 or CHSE Odisha +2 Arts",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "nameEn": { "type": "string" },
+        "nameOr": { "type": "string" },
+        "sortOrder": { "type": "integer" },
+        "published": { "type": "boolean" },
+        "syllabusNote": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["boardId", "nameEn", "nameOr", "sortOrder", "published", "createdAt", "updatedAt"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "Chapter within a subject for BSE Class 10 or CHSE +2 Arts",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "titleOr": { "type": "string" },
+        "chapterNumber": { "type": "integer" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "subjectId", "titleEn", "titleOr", "chapterNumber", "published", "createdAt", "updatedAt"]
+    },
+    "ImportantQuestion": {
+      "title": "ImportantQuestion",
+      "description": "Bilingual important or practice question organized by board, subject, chapter, and marks",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "marks": { "type": "integer" },
+        "category": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["EASY", "MEDIUM", "HARD"] },
+        "contentLabel": { "type": "string", "enum": ["VERIFIED_PYQ", "ADMIN_APPROVED", "PRACTICE_QUESTION", "AI_PRACTICE"] },
+        "sourceYear": { "type": "string" },
+        "questionEn": { "type": "string" },
+        "questionOr": { "type": "string" },
+        "answerEn": { "type": "string" },
+        "answerOr": { "type": "string" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "subjectId", "chapterId", "marks", "category", "difficulty", "contentLabel", "questionEn", "questionOr", "answerEn", "answerOr", "published", "createdAt", "updatedAt"]
+    },
+    "McqQuestion": {
+      "title": "McqQuestion",
+      "description": "Bilingual single-choice MCQ with 4 options and explanation",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "questionEn": { "type": "string" },
+        "questionOr": { "type": "string" },
+        "optionsEn": { "type": "array" },
+        "optionsOr": { "type": "array" },
+        "correctIndex": { "type": "integer" },
+        "explanationEn": { "type": "string" },
+        "explanationOr": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["EASY", "MEDIUM", "HARD"] },
+        "contentLabel": { "type": "string", "enum": ["VERIFIED_PYQ", "ADMIN_APPROVED", "PRACTICE_QUESTION", "AI_PRACTICE"] },
+        "sourceYear": { "type": "string" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "subjectId", "chapterId", "questionEn", "questionOr", "optionsEn", "optionsOr", "correctIndex", "explanationEn", "explanationOr", "difficulty", "contentLabel", "published", "createdAt", "updatedAt"]
+    },
+    "MockExam": {
+      "title": "MockExam",
+      "description": "Admin-configurable full-length mock test pattern",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "titleOr": { "type": "string" },
+        "durationMinutes": { "type": "integer" },
+        "totalMarks": { "type": "integer" },
+        "questionIds": { "type": "array" },
+        "patternNote": { "type": "string" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "subjectId", "titleEn", "titleOr", "durationMinutes", "totalMarks", "questionIds", "published", "createdAt", "updatedAt"]
+    },
+    "PyqPaper": {
+      "title": "PyqPaper",
+      "description": "Previous year question paper metadata and searchable text",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "examYear": { "type": "string" },
+        "questionType": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "titleOr": { "type": "string" },
+        "searchableText": { "type": "string" },
+        "pdfUri": { "type": "string" },
+        "contentLabel": { "type": "string", "enum": ["VERIFIED_PYQ", "PRACTICE_QUESTION"] },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "subjectId", "examYear", "questionType", "titleEn", "titleOr", "searchableText", "contentLabel", "published", "createdAt", "updatedAt"]
+    },
+    "StudyNote": {
+      "title": "StudyNote",
+      "description": "Bilingual chapter study notes, definitions, and PDF resource links",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "noteType": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "titleOr": { "type": "string" },
+        "contentEn": { "type": "string" },
+        "contentOr": { "type": "string" },
+        "pdfUri": { "type": "string" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "subjectId", "chapterId", "noteType", "titleEn", "titleOr", "contentEn", "contentOr", "published", "createdAt", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated student study preferences and board selection",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "language": { "type": "string", "enum": ["EN", "OR"] },
+        "examDateEpochDays": { "type": "integer" },
+        "dailyTargetQuestions": { "type": "integer" },
+        "streakDays": { "type": "integer" },
+        "lastStudyEpochDay": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "boardId", "language", "examDateEpochDays", "dailyTargetQuestions", "streakDays", "lastStudyEpochDay", "createdAt", "updatedAt"]
+    },
+    "UserBookmark": {
+      "title": "UserBookmark",
+      "description": "Student bookmark and revision list entry",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "itemType": { "type": "string", "enum": ["IMPORTANT_Q", "MCQ", "NOTE"] },
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "inRevisionList": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["itemId", "itemType", "boardId", "subjectId", "inRevisionList", "createdAt", "updatedAt"]
+    },
+    "ChapterProgress": {
+      "title": "ChapterProgress",
+      "description": "Student chapter completion tracking",
+      "type": "object",
+      "properties": {
+        "chapterId": { "type": "string" },
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["chapterId", "boardId", "subjectId", "completed", "createdAt", "updatedAt"]
+    },
+    "QuizAttempt": {
+      "title": "QuizAttempt",
+      "description": "Saved quiz, MCQ practice, or mock test attempt and performance metrics",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string", "enum": ["BSE_10", "CHSE_12_ARTS"] },
+        "subjectId": { "type": "string" },
+        "mode": { "type": "string", "enum": ["QUIZ", "MOCK_TEST", "MCQ_PRACTICE"] },
+        "title": { "type": "string" },
+        "totalQuestions": { "type": "integer" },
+        "correctCount": { "type": "integer" },
+        "wrongCount": { "type": "integer" },
+        "scoreMarks": { "type": "integer" },
+        "maxMarks": { "type": "integer" },
+        "durationSeconds": { "type": "integer" },
+        "status": { "type": "string", "enum": ["IN_PROGRESS", "COMPLETED"] },
+        "wrongMcqIds": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "mode", "title", "totalQuestions", "correctCount", "wrongCount", "scoreMarks", "maxMarks", "durationSeconds", "status", "wrongMcqIds", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/subjects/{subjectId}": {
+      "schema": { "$ref": "#/entities/Subject" },
+      "description": "Board-specific subjects catalog"
+    },
+    "/chapters/{chapterId}": {
+      "schema": { "$ref": "#/entities/Chapter" },
+      "description": "Subject-specific chapters catalog"
+    },
+    "/important_questions/{questionId}": {
+      "schema": { "$ref": "#/entities/ImportantQuestion" },
+      "description": "Important and practice questions bank"
+    },
+    "/mcqs/{mcqId}": {
+      "schema": { "$ref": "#/entities/McqQuestion" },
+      "description": "MCQ practice and quiz question bank"
+    },
+    "/mock_exams/{examId}": {
+      "schema": { "$ref": "#/entities/MockExam" },
+      "description": "Admin-configurable mock exam definitions"
+    },
+    "/pyq_papers/{pyqId}": {
+      "schema": { "$ref": "#/entities/PyqPaper" },
+      "description": "Previous year question paper archive"
+    },
+    "/study_notes/{noteId}": {
+      "schema": { "$ref": "#/entities/StudyNote" },
+      "description": "Bilingual study notes and definitions"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Authenticated student profile and study preferences"
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/UserBookmark" },
+      "description": "Student bookmarks and personal revision list"
+    },
+    "/users/{userId}/chapter_progress/{chapterId}": {
+      "schema": { "$ref": "#/entities/ChapterProgress" },
+      "description": "Student chapter completion status"
+    },
+    "/users/{userId}/attempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/QuizAttempt" },
+      "description": "Student quiz and mock test attempt records"
+    }
+  }
+}
